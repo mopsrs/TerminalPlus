@@ -4,7 +4,7 @@ A modern, feature-rich terminal emulator for Windows built with PyQt5. Designed 
 
 ## Features
 
-✨ **Core Features**
+**Core Features**
 - Clean, dark-themed GUI with syntax highlighting
 - Support for all Windows CMD and PowerShell commands
 - Command history with arrow key navigation
@@ -12,7 +12,7 @@ A modern, feature-rich terminal emulator for Windows built with PyQt5. Designed 
 - Built-in utility commands for common tasks
 - Lightweight and responsive
 
-🚀 **Advanced Features**
+**Advanced Features**
 - **Multi-window support** - Open multiple independent terminal instances
 - **Split view mode** - Dual panes for side-by-side reference/logging
 - **Command favorites** - Save and reuse frequently used commands
