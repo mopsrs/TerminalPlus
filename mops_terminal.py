@@ -2,7 +2,8 @@
 import sys
 import subprocess
 import os
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QLineEdit, QCompleter
+import json
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QCompleter, QSplitter
 from PyQt5.QtGui import QFont, QColor, QTextCursor, QTextCharFormat
 from PyQt5.QtCore import Qt, QSize, QTimer, QStringListModel, QObject, QEvent
 
@@ -102,21 +103,16 @@ class MopsTerminal(QWidget):
 
         # Animation helpers
         self._anim_timers = []
-
-        # Boot lock: require typing 'windowsopen' to proceed
-        self.boot_locked = True
-        # If user chooses 'terminalopen' we'll show the terminal but remain locked until 'windowsopen'
-        self.boot_mode_terminal_open = False
         
-        # Boot menu selection
-        self.boot_menu_active = True
-        self.boot_menu_items = ["Launch Terminal", "Exit to Windows"]
-        self.boot_menu_index = 0
+        # Command favorites
+        self.favorites = self.load_favorites()
         
-        self.show_boot_screen()
-
-        # Start fullscreen
-        self.showFullScreen()
+        # Split view toggle
+        self.split_view_enabled = False
+        self.secondary_output = None
+        
+        # Show welcome banner
+        self.show_welcome()
 
     # ---------------- UI / Animation ----------------
     def append_text(self, text, color="default", animate=True):
@@ -178,96 +174,7 @@ class MopsTerminal(QWidget):
         self.output.clear()
         self.append_text(logo_text, color="white", animate=True)
 
-    # ---------------- Boot / Welcome ----------------
-    def show_boot_screen(self):
-        boot = """
-╔════════════════════════════════════════════════════════════════════════════╗
-║                                                                            ║
-║                         MOPSR BOOT MENU                                   ║
-║                                                                            ║
-║                    Use ↑ ↓ arrows to select                               ║
-║                      Press ENTER to confirm                               ║
-║                                                                            ║
-╚════════════════════════════════════════════════════════════════════════════╝
-
-"""
-        self.output.clear()
-        self.append_text(boot, color="white", animate=False)
-        self.redraw_boot_menu()
-        self.input.setEnabled(False)  # Disable text input during boot menu
-        self.setFocus()  # Give focus to main widget instead of input
-
-    def redraw_boot_menu(self):
-        """Redraw the boot menu with current selection highlighted."""
-        # Clear and redraw the entire output
-        self.output.clear()
-        
-        boot_header = """
-╔════════════════════════════════════════════════════════════════════════════╗
-║                                                                            ║
-║                         MOPSR BOOT MENU                                   ║
-║                                                                            ║
-║                    Use ↑ ↓ arrows to select                               ║
-║                      Press ENTER to confirm                               ║
-║                                                                            ║
-╚════════════════════════════════════════════════════════════════════════════╝
-
-"""
-        self.output.insertPlainText(boot_header)
-        
-        # Create menu display
-        for i, item in enumerate(self.boot_menu_items):
-            if i == self.boot_menu_index:
-                # Highlight selected item
-                menu_line = f"  ▶ {item} ◀\n"
-            else:
-                menu_line = f"    {item}\n"
-            
-            cursor = self.output.textCursor()
-            cursor.movePosition(QTextCursor.End)
-            fmt = QTextCharFormat()
-            fmt.setForeground(QColor("#58a6ff"))
-            cursor.setCharFormat(fmt)
-            cursor.insertText(menu_line)
-            self.output.setTextCursor(cursor)
-    
-    def keyPressEvent(self, event):
-        """Handle key events at the main widget level for boot menu only."""
-        # Only handle boot menu keys, otherwise ignore at widget level
-        if self.boot_menu_active:
-            if event.key() == Qt.Key_Up:
-                self.boot_menu_index = (self.boot_menu_index - 1) % len(self.boot_menu_items)
-                self.redraw_boot_menu()
-                event.accept()
-                return
-            if event.key() == Qt.Key_Down:
-                self.boot_menu_index = (self.boot_menu_index + 1) % len(self.boot_menu_items)
-                self.redraw_boot_menu()
-                event.accept()
-                return
-            if event.key() == Qt.Key_Return:
-                self.handle_boot_menu_selection()
-                event.accept()
-                return
-            event.accept()  # Ignore all other keys during boot menu
-        else:
-            event.ignore()  # Let input field handle all events when terminal is active
-
-    def unlock_boot(self):
-        self.boot_locked = False
-        self.boot_menu_active = False
-        self.input.setEnabled(True)  # Re-enable text input
-        self.input.setFocus()  # Give focus back to input
-        self.append_text("\nBoot unlocked. Starting MOPSR...\n\n", color="green", animate=False)
-        self.show_welcome()
-
-    def handle_boot_menu_selection(self):
-        """Handle boot menu selection."""
-        if self.boot_menu_index == 0:  # Launch Terminal
-            self.unlock_boot()
-        elif self.boot_menu_index == 1:  # Exit to Windows
-            self.append_text("\nExiting MOPSR and returning to Windows...\n", color="cyan", animate=False)
-            sys.exit(0)
+    # ----------------  Welcome / Startup ----------------
 
     def show_welcome(self):
         logo = (
@@ -293,11 +200,6 @@ class MopsTerminal(QWidget):
             return
         self.append_text(f"\n> {cmd}\n", color="yellow")
         self.input.clear()
-
-        # Boot lock enforcement
-        if self.boot_locked:
-            self.append_text("System locked. Type 'windowsopen' to exit or 'terminalopen' to open terminal.\n", color="red")
-            return
 
         # Builtin commands
         low = cmd.lower()
@@ -351,6 +253,15 @@ class MopsTerminal(QWidget):
                 self.mops_install(pkg)
             else:
                 self.append_text("Usage: mops install <package>\n", color="yellow")
+        elif low == "newwindow":
+            self.open_new_window()
+        elif low == "splitview":
+            self.toggle_split_view()
+        elif low.startswith("favorite "):
+            fav_name = cmd.split(None, 1)[1]
+            self.add_favorite(fav_name)
+        elif low == "favorites":
+            self.list_favorites()
         else:
             self.execute_command(cmd)
 
@@ -408,73 +319,73 @@ class MopsTerminal(QWidget):
 
 NAVIGATION & SYSTEM
 ───────────────────
-
 pwd
   Show current directory
-
 cd [path]
   Change directory
-
 ls / dir
   List directory contents
-
 cls / clear
   Clear terminal
 
 SYSTEM INFORMATION
 ──────────────────
-
 whoami
   Show current user
-
 systeminfo
   System information
+ipconfig
+  Show network configuration
+tasklist
+  List running processes
 
 FILE OPERATIONS
 ───────────────
-
 copy [src] [dst]
   Copy files
-
 del [file]
   Delete files
-
 mkdir [dir]
   Create directory
-
 type [file]
   Show file content
+tree [path]
+  Show directory tree
 
 UTILITIES
-───────────────────
-
+─────────
 search [pattern]
   Search text in files under current directory
-
 mkcd [dir]
   Make directory (with parents) and change into it
-
 extract [archive]
   Extract zip/tar archives into current directory
-
 serve [port]
   Start a simple HTTP server (default 8000)
-
 stopserve
-  Stop server started with `serve`
-
+  Stop running server
 mops install [pkg]
-  Install Python package using current interpreter's pip
-
+  Install Python package using pip
 wifcode [--show]
-  List saved Wi-Fi profiles. Passwords hidden by default; reveal with `--show`
+  List saved Wi-Fi profiles (password hidden by default)
+calc [expr]
+  Evaluate math expressions
+
+TERMINAL FEATURES
+──────────────────
+newwindow
+  Open a new terminal window
+splitview
+  Toggle split view (dual pane)
+favorite [command]
+  Add command to favorites
+favorites
+  List all favorite commands
 
 TERMINAL CONTROL
-────────────────
-
+─────────────────
 help / ?
   Show help
-
 exit
   Close terminal
 """
@@ -667,6 +578,92 @@ exit
                 self.append_text(f"Installation failed (exit {proc.returncode}).\n", color="red")
         except Exception as e:
             self.append_text(f"mops install error: {e}\n", color="red")
+    
+    # ──────────────────  Multi-Window & Features ──────────────────
+    def open_new_window(self):
+        """Open a new independent terminal window."""
+        try:
+            new_window = MopsTerminal()
+            new_window.show()
+            self.append_text("✓ New terminal window opened.\n", color="green")
+        except Exception as e:
+            self.append_text(f"Error opening new window: {e}\n", color="red")
+    
+    def toggle_split_view(self):
+        """Toggle split view mode with dual panes."""
+        if self.split_view_enabled:
+            # Disable split view
+            self.layout.removeWidget(self.secondary_output)
+            self.secondary_output.deleteLater()
+            self.secondary_output = None
+            self.split_view_enabled = False
+            self.append_text("✓ Split view disabled.\n", color="yellow")
+        else:
+            # Enable split view
+            splitter = QSplitter(Qt.Horizontal)
+            splitter.addWidget(self.output)
+            
+            self.secondary_output = QTextEdit()
+            self.secondary_output.setReadOnly(True)
+            monospace_font = QFont()
+            monospace_font.setFamily("Consolas")
+            monospace_font.setPointSize(10)
+            self.secondary_output.setFont(monospace_font)
+            self.secondary_output.setStyleSheet("""
+                QTextEdit { background-color: #0d1117; color: #c9d1d9; border: none; margin: 0px; }
+            """)
+            
+            splitter.addWidget(self.secondary_output)
+            splitter.setSizes([500, 500])
+            self.layout.insertWidget(0, splitter)
+            self.layout.removeWidget(self.output)
+            
+            self.split_view_enabled = True
+            self.secondary_output.insertPlainText("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+            self.secondary_output.insertPlainText("Secondary pane ready for reference\n")
+            self.secondary_output.insertPlainText("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n")
+            self.append_text("✓ Split view enabled! Use secondary pane for reference.\n", color="green")
+    
+    def load_favorites(self):
+        """Load favorite commands from file."""
+        fav_file = os.path.expanduser("~/.mops_favorites.json")
+        try:
+            if os.path.exists(fav_file):
+                with open(fav_file, 'r') as f:
+                    return json.load(f)
+        except Exception:
+            pass
+        return {}
+    
+    def save_favorites(self):
+        """Save favorite commands to file."""
+        fav_file = os.path.expanduser("~/.mops_favorites.json")
+        try:
+            with open(fav_file, 'w') as f:
+                json.dump(self.favorites, f, indent=2)
+        except Exception as e:
+            self.append_text(f"Error saving favorites: {e}\n", color="red")
+    
+    def add_favorite(self, command):
+        """Add a command to favorites."""
+        if command.strip():
+            key = command.split()[0] if command else "fav"
+            self.favorites[key] = command
+            self.save_favorites()
+            self.append_text(f"✓ Added to favorites: {command}\n", color="green")
+        else:
+            self.append_text("Please provide a command.\n", color="red")
+    
+    def list_favorites(self):
+        """List all favorite commands."""
+        if not self.favorites:
+            self.append_text("No favorites yet. Use 'favorite [command]' to add one.\n", color="yellow")
+            return
+        
+        self.append_text("\n━━━━━━━━━━ Favorite Commands ━━━━━━━━━━\n", color="cyan")
+        for key, cmd in self.favorites.items():
+            self.append_text(f"  {key:20} → {cmd}\n", color="white")
+        self.append_text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n", color="cyan")
 
 
 if __name__ == "__main__":
