@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MOPSR Terminal
 
 A sleek, custom terminal emulator for Windows built with PyQt5. Features a boot menu, command history, autocomplete, and various utility commands.
@@ -148,3 +149,7 @@ Some commands (like `wifcode`) require administrator privileges on Windows. Run 
 ---
 
 **Have fun with MOPSR Terminal!** 🚀
+=======
+# TerminalPlus
+Passionproject. This might have bugs and not get as much attention.
+>>>>>>> c21fb0f8a29560dc6d8972dd91045e2d7a10c4e8
