@@ -2,6 +2,34 @@
 
 A modern, feature-rich terminal emulator for Windows built with PyQt5. Designed for developers and power users who want a sleek alternative to the standard Windows Command Prompt.
 
+## Features
+
+✨ **Core Features**
+- Clean, dark-themed GUI with syntax highlighting
+- Support for all Windows CMD and PowerShell commands
+- Command history with arrow key navigation
+- Intelligent command autocomplete
+- Built-in utility commands for common tasks
+- Lightweight and responsive
+
+🚀 **Advanced Features**
+- **Multi-window support** - Open multiple independent terminal instances
+- **Split view mode** - Dual panes for side-by-side reference/logging
+- **Command favorites** - Save and reuse frequently used commands
+- **HTTP server** - Quick development server for testing
+- **Archive extraction** - Built-in support for ZIP and TAR files
+- **WiFi profile manager** - View saved WiFi networks and passwords
+- **Mathematical expressions** - Evaluate calculations without external tools
+
+## Requirements
+
+- **Python 3.6+** or higher
+- **PyQt5** - GUI framework
+- **Windows OS** - Optimized for Windows (some features Windows-specific)
+
+## Installation
+
+### Quick Start
 
 1. **Clone the repository**
    ```bash
