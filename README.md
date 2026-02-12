@@ -23,25 +23,23 @@ A modern, feature-rich terminal emulator for Windows built with PyQt5. Designed 
 
 ## Requirements
 
-- **Python 3.6+** or higher
-- **PyQt5** - GUI framework
-- **Windows OS** - Optimized for Windows (some features Windows-specific)
+- Python 3.6+
+- PyQt5
+- Windows OS (some commands are Windows-specific)
 
 ## Installation
 
-### Quick Start
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/mops-terminal.git
+cd mops-terminal
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/mops-terminal.git
-   cd mops-terminal
-   ```
-
-2. **Create virtual environment** (recommended)
-   ```bash
-   python -m venv venv
-   venv\Scripts\activate
-   ```
+### 2. Create Virtual Environment
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
 
 3. **Install dependencies**
    ```bash
