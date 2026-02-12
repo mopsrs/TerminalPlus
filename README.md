@@ -2,44 +2,18 @@
 
 A modern, feature-rich terminal emulator for Windows built with PyQt5. Designed for developers and power users who want a sleek alternative to the standard Windows Command Prompt.
 
-## Features
 
-✨ **Core Features**
-- Clean, dark-themed GUI with syntax highlighting
-- Support for all Windows CMD and PowerShell commands
-- Command history with arrow key navigation
-- Intelligent command autocomplete
-- Built-in utility commands for common tasks
-- Lightweight and responsive
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/mops-terminal.git
+   cd mops-terminal
+   ```
 
-🚀 **Advanced Features**
-- **Multi-window support** - Open multiple independent terminal instances
-- **Split view mode** - Dual panes for side-by-side reference/logging
-- **Command favorites** - Save and reuse frequently used commands
-- **HTTP server** - Quick development server for testing
-- **Archive extraction** - Built-in support for ZIP and TAR files
-- **WiFi profile manager** - View saved WiFi networks and passwords
-- **Mathematical expressions** - Evaluate calculations without external tools
-
-## Requirements
-
-- Python 3.6+
-- PyQt5
-- Windows OS (some commands are Windows-specific)
-
-## Installation
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/mops-terminal.git
-cd mops-terminal
-```
-
-### 2. Create Virtual Environment
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
+2. **Create virtual environment** (recommended)
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   ```
 
 3. **Install dependencies**
    ```bash
